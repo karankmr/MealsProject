@@ -2,12 +2,13 @@ import { Body, Controller, Delete, Get, Param, Post, Query, UseGuards } from '@n
 import  UserService from '../services/user.service';
 import { AuthCredentialsDto } from '../dto/auth-credentials.dto';
 import ValidationPipes from '../pipes/validation.pipe';
-import { AuthCredentialSchema } from '../schemas/signUp-authCredentials.schema';
 import { FilterUserDto } from '../dto/filter-user.dto';
 import { UserEntity } from '../entities/user.entity';
 import { LoginAuthCredentialSchema } from '../schemas/login-authCredentials.schema';
 import { RolesGuard } from '../guards/roles.guard';
 import { Roles } from '../decorators/roles.decorator';
+import { CreateUserDto } from '../dto/create-user.dto';
+import { CreateUserSchema } from '../schemas/create-user.schema';
 
 @Controller('user')
 export default class UserController {
@@ -16,9 +17,9 @@ export default class UserController {
 
 
   @Post('signUp')
-  signUp(@Body(new ValidationPipes(AuthCredentialSchema))
-           authCredentialsDto:AuthCredentialsDto):Promise<string>{
-    return this.userService.signUp(authCredentialsDto)
+  signUp(@Body(new ValidationPipes(CreateUserSchema))
+          createUserDto:CreateUserDto):Promise<string>{
+    return this.userService.signUp(createUserDto)
   }
 
 
@@ -47,8 +48,8 @@ export default class UserController {
   @UseGuards(RolesGuard)
   @Roles('admin')
   @Delete('/delete')
-  deleteUser(@Query('username') name:string):Promise<any>{
-    return this.userService.deleteUser(name)
+  deleteUser(@Query('username') username:string):Promise<any>{
+    return this.userService.deleteUser(username)
   }
 
 

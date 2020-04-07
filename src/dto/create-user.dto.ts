@@ -2,7 +2,6 @@ import EUserIAm from '../enums/user-role.enum';
 
 export class CreateUserDto{
 name: string;
-username: string;
+userName: string;
 password: string;
-iAm:EUserIAm
 }

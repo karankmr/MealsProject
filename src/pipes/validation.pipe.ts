@@ -3,6 +3,7 @@ import * as Joi from '@hapi/joi';
 
 @Injectable()
 export default class ValidationPipes implements PipeTransform<any> {
+
   constructor(private readonly schema: Joi.ObjectSchema) {
   }
 

@@ -9,9 +9,7 @@ export class RolesGuard {
               private authService:AuthService) {
   }
   public async canActivate(context:ExecutionContext):Promise<boolean>{
-    const roles =this.reflector.getAllAndOverride<string[]>('roles',
-                                                        [context.getHandler(),
-                                                                 context.getClass()])
+    const roles =this.reflector.get<string[]>('roles', context.getHandler());
     if(!roles){
       return true
     }

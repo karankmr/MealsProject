@@ -22,7 +22,10 @@ export class MealEntity extends BaseEntity{
   @Column({ name: 'calorie' })
   calorie: number;
 
-  @ManyToOne(type => UserEntity,user=>user.meals,{eager:false})
+  @Column({name:'status'})
+  status:string
+
+  @ManyToOne(type => UserEntity,user=>user.meals,{eager:false,onDelete:'CASCADE'})
   @JoinColumn({name:'userId'})
   user:UserEntity
 

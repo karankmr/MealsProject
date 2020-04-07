@@ -10,7 +10,6 @@ export default class AuthenticationGuard implements CanActivate{
     const request = context.switchToHttp().getRequest();
     const token = request.headers.jwttoken;
 
-    //const token = headers['jwttoken'];
     const user = await this.authService.validateToken(token)
     if (user) {
       request.user=user;

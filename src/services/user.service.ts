@@ -4,8 +4,8 @@ import { FilterUserDto } from '../dto/filter-user.dto';
 import AuthService from './auth.service';
 import { UserEntity } from '../entities/user.entity';
 import * as bcrypt from 'bcrypt';
-
-
+import { CreateUserDto } from '../dto/create-user.dto';
+import {Like} from "typeorm";
 
 @Controller()
 export default class UserService {
@@ -14,19 +14,18 @@ export default class UserService {
     private readonly authService: AuthService) {
   }
 
-  async signUp(authCredentialsDto: AuthCredentialsDto): Promise<string> {
+  async signUp(createUserDto: CreateUserDto): Promise<string> {
 
-    const { name, userName, password ,iAm} = authCredentialsDto
+    const { name, userName, password } = createUserDto
 
     const user = new UserEntity()
     user.username = userName;
     user.name = name;
     user.salt= await bcrypt.genSalt();
     user.password=  await bcrypt.hash(password,user.salt);
-    user.iAm=iAm
+    user.iAm='user';
     await user.save();
-    return this.authService.generateJWTToken(user)
-    // return `Hey ${name} You can login now`
+    return `Hey ${name}! You can login now`
   }
 
 
@@ -45,22 +44,24 @@ export default class UserService {
 
 
   async searchUser(filterUserDto: FilterUserDto) {
-    const {search}=filterUserDto
+    const { search } = filterUserDto
 
-    const query = UserEntity.createQueryBuilder('user')
-    if(search){
-      query.andWhere(('user.name LIKE:search' +
-        ' OR user.username LIKE:search ' ),{search:`%${search}%`})
-    }
-    return query.getMany()
+    const users = await UserEntity.find({where:[
+        {name: Like(`%${search}%`)},
+        {username:Like(`%${search}%`)}]
+    });
+    if(users.length>0)
+    {return users;}
+    else
+      throw new NotFoundException('User does not exist')
+
   }
-
 
   async getAllUsers(page=1):Promise<UserEntity[]>{
     const Users=await UserEntity.find({select:['id', 'name', 'username','iAm'],where: { iAm:'user'},
       take:5,
       skip:5*(page-1)},
-      )
+    )
     return Users
   }
 
@@ -70,14 +71,11 @@ export default class UserService {
     const page=1;
     if(result) {
       await UserEntity.remove(result)
-      const deleted =true;
       const users = await UserEntity.find({select:['id', 'name', 'username','iAm'],
         take:5,
         skip:5*(page-1),}
       )
-      console.log(users)
-      const info= {users,deleted}
-      return info
+      return  {users,deleted:true}
     }
     else
       throw new NotFoundException("User not found")

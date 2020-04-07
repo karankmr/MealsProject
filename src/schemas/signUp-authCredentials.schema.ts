@@ -1,5 +1,4 @@
 import * as Joi from '@hapi/joi';
-import EUserIAm from '../enums/user-role.enum';
 
 
 const AuthCredentialSchema=Joi.object({
@@ -15,8 +14,6 @@ const AuthCredentialSchema=Joi.object({
       .min(3)
       .max(30)
       .required(),
-
-  iAm: Joi.string().allow(...Object.values(EUserIAm)).required()
 
   }
 )
