@@ -11,6 +11,7 @@ import { Roles } from '../decorators/roles.decorator';
 import AuthenticationGuard from '../guards/authentication.guard';
 import { UpdateMealDto } from '../dto/update-meal.dto';
 import { RolesGuard } from '../guards/roles.guard';
+import { UpdateMealSchema } from '../schemas/update-meal.schema';
 
 
 @Controller('meal')
@@ -39,8 +40,9 @@ export class MealController {
   @UseGuards(RolesGuard)
   @Roles('admin')
   @Get('getMealsByUserId')
-  getMealsByUserId(@Query('userId') userId: number): Promise<any> {
-    return this.mealService.getMealsByUserId(userId);
+  getMealsByUserId(@Query('userId') userId: number,
+                   @Query('page') page:number): Promise<any> {
+    return this.mealService.getMealsByUserId(userId,page);
   }
 
 
@@ -56,14 +58,14 @@ export class MealController {
   @Roles('admin')
   @Delete('/deleteMeal')
   deleteMeal(@Query('userId') userId: number
-    , @Query('title') title: string): Promise<any> {
-    return this.mealService.deleteMeal(userId, title)
+    , @Query('id') id: number): Promise<any> {
+    return this.mealService.deleteMeal(userId, id)
   }
 
   @Put()
   updateMeal(@Query('id') id: number,
              @Query('userId') userId:number,
-             @Body() updateMealDto: UpdateMealDto):Promise<any> {
+             @Body(new ValidationPipes(UpdateMealSchema)) updateMealDto: UpdateMealDto):Promise<any> {
     return this.mealService.updateMeal(id,userId,updateMealDto)
   }
 
@@ -74,7 +76,5 @@ export class MealController {
 
     return this.mealService.updateMealStatus(id,userId,status)
   }
-
-
 
 }

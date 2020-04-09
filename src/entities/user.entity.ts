@@ -1,6 +1,5 @@
 import { Entity, Column, PrimaryGeneratedColumn, BaseEntity, OneToMany } from 'typeorm';
 import * as bcrypt from 'bcrypt'
-import EUserIAm from '../enums/user-role.enum';
 import { MealEntity } from './meal.entity';
 @Entity()
 export class UserEntity extends BaseEntity {
@@ -13,11 +12,17 @@ export class UserEntity extends BaseEntity {
   @Column({})
   username: string;
 
+  @Column({})
+  age:number
+
   @Column()
   password: string;
 
   @Column({name: 'i_am'})
   public iAm: string;
+
+  @Column({name:'maxCalorie'})
+  maxCalorie: number;
 
   @Column()
   salt: string

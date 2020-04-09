@@ -9,6 +9,7 @@ import { Between, Like } from 'typeorm';
 import { UpdateMealDto } from '../dto/update-meal.dto';
 import ReturnVal from '../lib/returnVal';
 import * as moment from 'moment';
+import { take } from 'rxjs/operators';
 
 @Injectable()
 export class MealService {
@@ -17,16 +18,14 @@ export class MealService {
     private mealRepository:MealRepository) {
   }
 
-
   async getFilteredMeals(  filterMealDto:FilterMealDto,user:UserEntity):Promise<any> {   //filtered meals
     const { search, fromDate, toDate, fromTime, toTime } = filterMealDto;
-    const query = MealEntity.createQueryBuilder('meal')
-
 
     if (fromDate && toDate) {
       if (!moment(fromDate, 'DD/MM/YYYY').isValid()) {
         return ReturnVal.error('fromDate is not valid', "", 400);
       }
+
       if (!moment(toDate, 'DD/MM/YYYY').isValid()) {
         return ReturnVal.error('toDate is not valid', "", 400);
       }
@@ -41,7 +40,6 @@ export class MealService {
       else
         throw NotFoundException
     }
-
     if (fromTime && toTime) {
       if (!moment(fromTime, 'hh:mm').isValid()) {
         return ReturnVal.error('fromTime is not valid', "", 400);
@@ -59,7 +57,6 @@ export class MealService {
       else
         throw new NotFoundException('no meals available')
     }
-
     if (search) {
       const meals = await MealEntity.find({where:[
           {title: Like(`%${search}%`)},
@@ -75,7 +72,9 @@ export class MealService {
 
   }
 
-  async getAllMeals(page:number,currentUser:UserEntity):Promise<MealEntity[]>{     //pagination
+
+  async getAllMeals(page=1,currentUser:UserEntity):Promise<MealEntity[]>{     //pagination
+
     if(currentUser.iAm==='admin')
     {
       const meals=await MealEntity.find({select:['id', 'date', 'time', 'title', 'calorie','userId','status'],
@@ -96,8 +95,9 @@ export class MealService {
   }
 
 
-  async getMealsByUserId(userId:number):Promise<MealEntity[]>{
-    const user =await UserEntity.find({relations:['meals'],where:{id:userId}})
+
+  async getMealsByUserId(userId:number,page=1):Promise<MealEntity[]>{
+    const user =await UserEntity.find({relations:['meals'],where:{id:userId}},)
     if(user)
       return user[0].meals
     else
@@ -131,44 +131,70 @@ export class MealService {
     return Meal;
   }
 
+ async getUpdatedMeals(userId:number):Promise<MealEntity[]> {
+  const
+  meals = await MealEntity.find({
+    select: ['id', 'date', 'time', 'title', 'calorie', 'userId', 'status'],
+    where: { userId }
+  })
+  return meals
+}
 
   async updateMeal(id:number,userId:number,updateMealDTO:UpdateMealDto):Promise<any>{
     const {date,time, title, calorie,status}=updateMealDTO
     const meal=await MealEntity.findOne({id,userId});
     if(meal)
-    {if(status)
-    {meal.status=status
+    {
+
+      if(status)
+    {
+      meal.status=status
       await meal.save();
-      return {meal,updated:true}}
-
-    if(date)
-    {
-      meal.date=date
-      await meal.save()
-      return {meal,updated:true}
+      const meals=await this.getUpdatedMeals(userId)
+      return {meals,updated:true}
     }
 
-    if(time)
-    {
-      meal.time=time
-      await meal.save()
-      return {meal,updated:true}
-    }
-    if(calorie)
-    {
-      meal.calorie=calorie
-      await meal.save()
-      return {meal,updated:true}
-    }
+      if(date) {
+        if (!moment(date, 'DD/MM/YYYY').isValid()) {
+          return ReturnVal.error('date is not valid', "", 400);
+        }
+        else {
+          meal.date = date
+          await meal.save()
+          const meals=await this.getUpdatedMeals(userId)
+          return {meals,updated:true}
+        }
+      }
 
-    if(title)
-    {
-      meal.title=title
-      await meal.save()
-      return {meal,updated:true}
-    }}
+      if(time) {
+        if (!moment(time, 'hh:mm').isValid()) {
+          return ReturnVal.error('time is not valid', "", 400);
+        } else {
+          meal.time = time
+          await meal.save()
+          const meals=await this.getUpdatedMeals(userId)
+          return {meals,updated:true}
+        }
+      }
+
+      if(calorie)
+      {
+        meal.calorie=calorie
+        await meal.save()
+        const meals=await this.getUpdatedMeals(userId)
+        return {meals,updated:true}
+      }
+
+      if(title)
+      {
+        meal.title=title
+        await meal.save()
+        const meals=await this.getUpdatedMeals(userId)
+        return {meals,updated:true}
+      }}
     else throw new NotFoundException("meal not found")
   }
+
 
   async updateMealStatus(id:number,userId:number,status:string):Promise<any>{
     const meal=await MealEntity.findOne({id,userId});
@@ -178,32 +204,32 @@ export class MealService {
           meal.status = status
           await meal.save();
           const page = 1
-          const meals = await MealEntity.find({
-            select: ['id', 'date', 'time', 'title', 'calorie', 'userId', 'status'],
-            take: 5,
-            skip: 5 * (page - 1)
-          })
-          console.log(meals)
+          const meals=await MealEntity.find({select:['id', 'date', 'time', 'title', 'calorie','userId','status'],
+            take:5,
+            skip:5*(page-1),where:{userId}})
+          if(meals.length>0)
           return { meals, updated: true }
         }} else
-          throw new NotFoundException('meal not found')
-      }
+        throw new NotFoundException('meal not found')
     }
+  }
 
-  async deleteMeal(userId:number,title:string):Promise<any> {
-    if(userId&&title)
-    {const result = await MealEntity.findOne({ userId,title})
-    const page=1
-    if (result) {
-      await MealEntity.remove(result)
-      const meals = await MealEntity.find({
-        select: ['id', 'date', 'time', 'title', 'calorie', 'userId','status'],
-        take: 5,
-        skip: 5 * (page - 1), where: { userId }
-      })
-      return {meals,deleted:true}
-    } else
-      throw new NotFoundException("User not found")}
+
+  async deleteMeal(userId:number,id:number):Promise<any> {
+    if(userId&&id)
+    {const result = await MealEntity.findOne({id, userId} )
+      // const page=1
+      if (result) {
+        await MealEntity.remove(result)
+        const meals = await MealEntity.find({
+          select: ['id', 'date', 'time', 'title', 'calorie', 'userId','status'],
+          // take: 5,
+          // skip: 5 * (page - 1),
+          where: { userId }
+        })
+        return {meals,deleted:true}
+      } else
+        throw new NotFoundException("Meal not found")}
     else
       return ReturnVal.error('Invalid Input')
   }
