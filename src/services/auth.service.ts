@@ -1,7 +1,6 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { UserEntity } from '../entities/user.entity';
 import * as JWT from 'jsonwebtoken'
-import { InvalidClassException } from '@nestjs/core/errors/exceptions/invalid-class.exception';
 
 @Injectable()
 export default class AuthService {
@@ -27,10 +26,9 @@ export default class AuthService {
       throw new UnauthorizedException('Invalid User')
 
   }
-  catch (e) {
+  catch(e){
       throw  new UnauthorizedException('Invalid Credentials')
   }
-
     }
 
 }

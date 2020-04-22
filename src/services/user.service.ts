@@ -1,4 +1,4 @@
-import { Controller, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { Controller, HttpException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { AuthCredentialsDto } from '../dto/auth-credentials.dto';
 import { FilterUserDto } from '../dto/filter-user.dto';
 import AuthService from './auth.service';
@@ -18,8 +18,12 @@ export default class UserService {
 
   async signUp(createUserDto: CreateUserDto): Promise<string> {
 
+    const { name, userName, password,age} = createUserDto;
 
-    const { name, userName, password,age} = createUserDto
+    const nFound= await UserEntity.findOne({where:{username: userName}});
+    if(nFound){
+      throw new HttpException('User already exist',409)
+    }
 
     const user = new UserEntity()
     user.username = userName;
@@ -37,15 +41,19 @@ export default class UserService {
   async login(authCredentialsDto: AuthCredentialsDto): Promise<any> {
     const { userName, password } = authCredentialsDto
 
-    const user = await UserEntity.findOne({ where: { username: userName } })
+    const user = await UserEntity.findOne({ where: { username: userName } });
 
     if (user && await user.validatePassword(password)) {
       delete user.meals
       const token= await this.authService.generateJWTToken(user);
-      return {token,"iAm":user.iAm,loggedIn:true,userId:user.id}
+      if(user.iAm==='admin')
+      return {token,"iAm":user.iAm,loggedIn:true};
+      else
+        return {token,"iAm":user.iAm,loggedIn:true,userId:user.id}
 
     } else
-      throw new UnauthorizedException('Invalid Credentials')
+      throw new HttpException('User Invalid', 401);
+
   }
 
 
@@ -60,7 +68,7 @@ export default class UserService {
     if(users.length>0)
     {return users;}
     else
-      throw new NotFoundException('User does not exist')
+      throw new HttpException('No such User', 404)
 
   }
 
@@ -72,14 +80,14 @@ export default class UserService {
     if(users.length>0)
     return {users}
 
-    else return returnVal.error('No users available')
+    else throw new HttpException('No users found', 401)
   }
 
 
   async getUserById(id:number):Promise<any>{
-    const user=await UserEntity.findOne({select:['id', 'name', 'username','iAm','maxCalorie'],where: { id}})
+    const user=await UserEntity.findOne({select:['id', 'name', 'username','iAm','maxCalorie','age'],where: { id}})
     if(user)
-      return {user}
+      return {user};
     else
     throw new NotFoundException('user not found')
 }
@@ -129,10 +137,12 @@ export default class UserService {
         return {updated:true,maxCalorie:user.maxCalorie}
       }
     if(password){
-      user.password=password
+      user.salt= await bcrypt.genSalt();
+      user.password=  await bcrypt.hash(password,user.salt);
       await user.save()
       return {updated:true}
     }
+
   }
   else throw new NotFoundException('user not found')
   }

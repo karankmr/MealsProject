@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { HttpException, Injectable, NotFoundException } from '@nestjs/common';
 import { MealRepository } from '../repositories/meal.repository';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MealEntity } from '../entities/meal.entity';
@@ -9,7 +9,6 @@ import { Between, Like } from 'typeorm';
 import { UpdateMealDto } from '../dto/update-meal.dto';
 import ReturnVal from '../lib/returnVal';
 import * as moment from 'moment';
-import { take } from 'rxjs/operators';
 
 @Injectable()
 export class MealService {
@@ -96,12 +95,16 @@ export class MealService {
 
 
 
-  async getMealsByUserId(userId:number,page=1):Promise<MealEntity[]>{
-    const user =await UserEntity.find({relations:['meals'],where:{id:userId}},)
-    if(user)
+  async getMealsByUserId(userId:number):Promise<MealEntity[]>{
+    const user =await UserEntity.find({relations:['meals'],where:{id:userId}});
+
+    if(user.length>0)
+    {
+      if(user[0].meals.length>0)
       return user[0].meals
+    else throw new HttpException('No meals found',502)}
     else
-      throw new NotFoundException('Meal with id not found')
+      throw new HttpException('No user found',404)
   }
 
 
@@ -155,8 +158,9 @@ export class MealService {
     }
 
       if(date) {
-        if (!moment(date, 'DD/MM/YYYY').isValid()) {
-          return ReturnVal.error('date is not valid', "", 400);
+        if (!moment(date, 'DD/MM/YYYY').isValid())
+        {
+          throw new HttpException('date is invalid',422)
         }
         else {
           meal.date = date
@@ -168,7 +172,7 @@ export class MealService {
 
       if(time) {
         if (!moment(time, 'hh:mm').isValid()) {
-          return ReturnVal.error('time is not valid', "", 400);
+          throw new HttpException('time is invalid',422)
         } else {
           meal.time = time
           await meal.save()
@@ -218,15 +222,12 @@ export class MealService {
   async deleteMeal(userId:number,id:number):Promise<any> {
     if(userId&&id)
     {const result = await MealEntity.findOne({id, userId} )
-      // const page=1
       if (result) {
-        await MealEntity.remove(result)
+        await MealEntity.remove(result);
         const meals = await MealEntity.find({
           select: ['id', 'date', 'time', 'title', 'calorie', 'userId','status'],
-          // take: 5,
-          // skip: 5 * (page - 1),
           where: { userId }
-        })
+        });
         return {meals,deleted:true}
       } else
         throw new NotFoundException("Meal not found")}

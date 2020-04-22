@@ -40,9 +40,8 @@ export class MealController {
   @UseGuards(RolesGuard)
   @Roles('admin')
   @Get('getMealsByUserId')
-  getMealsByUserId(@Query('userId') userId: number,
-                   @Query('page') page:number): Promise<any> {
-    return this.mealService.getMealsByUserId(userId,page);
+  getMealsByUserId(@Query('userId') userId: number): Promise<any> {
+    return this.mealService.getMealsByUserId(userId);
   }
 
 

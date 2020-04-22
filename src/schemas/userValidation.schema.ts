@@ -52,7 +52,7 @@ const UpdateUserSchema=Joi.object( {
     .email({ minDomainSegments: 2})
     ,
 
-  maxCalorie:Joi.number().min(1000),
+  maxCalorie:Joi.number().min(0),
 
   password: Joi.string()
     .min(5)

@@ -13,7 +13,7 @@ export class UserEntity extends BaseEntity {
   username: string;
 
   @Column({})
-  age:number
+  age:number;
 
   @Column()
   password: string;
@@ -25,10 +25,10 @@ export class UserEntity extends BaseEntity {
   maxCalorie: number;
 
   @Column()
-  salt: string
+  salt: string;
 
   @OneToMany(type => MealEntity,meal=>meal.user,{eager:true})
-  meals:MealEntity[]
+  meals:MealEntity[];
 
   async validatePassword(password: string):Promise<boolean>{
     const hash=await bcrypt.hash(password,this.salt)

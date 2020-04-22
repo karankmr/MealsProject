@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Post, Put, Query, UseGuards } from '@nestjs/common';
 import  UserService from '../services/user.service';
 import { AuthCredentialsDto } from '../dto/auth-credentials.dto';
 import ValidationPipes from '../pipes/validation.pipe';
@@ -7,17 +7,14 @@ import { UserEntity } from '../entities/user.entity';
 import { RolesGuard } from '../guards/roles.guard';
 import { Roles } from '../decorators/roles.decorator';
 import { CreateUserDto } from '../dto/create-user.dto';
-import { UpdateMealSchema } from '../schemas/update-meal.schema';
-import { UpdateMealDto } from '../dto/update-meal.dto';
-import { CreateUserSchema, LoginAuthCredentialSchema, UpdateUserSchema } from '../schemas/userValidation.schema';
+import {CreateUserSchema, LoginAuthCredentialSchema, UpdateUserSchema} from '../schemas/userValidation.schema';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import AuthenticationGuard from '../guards/authentication.guard';
 
+
 @Controller('user')
 export default class UserController {
-
   constructor(private readonly userService:UserService) {}
-
 
   @Post('signUp')
   signUp(@Body(new ValidationPipes(CreateUserSchema))
@@ -55,7 +52,6 @@ export default class UserController {
     return this.userService.getUserById(id)
   }
 
-
   @UseGuards(RolesGuard)
   @Roles('admin')
   @Delete('/delete')
@@ -69,6 +65,4 @@ export default class UserController {
              @Body(new ValidationPipes(UpdateUserSchema)) updateUserDto: UpdateUserDto):Promise<any> {
     return this.userService.updateUser(userId,updateUserDto)
   }
-
-
 }
